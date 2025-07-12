@@ -12,7 +12,6 @@ body {
   min-height: 100vh;
 }
 
-/* Wrapper to center the box */
 #container {
   display: flex;
   justify-content: center;
@@ -20,7 +19,6 @@ body {
   width: 100%;
 }
 
-/* Main box */
 #main {
   font-size: 18px;
   background-color: #e3d5ca;
@@ -33,7 +31,6 @@ body {
   text-align: center;
 }
 
-/* Form container */
 #form-container {
   display: flex;
   flex-direction: column;
@@ -42,7 +39,6 @@ body {
   margin-top: 15px;
 }
 
-/* Inputs */
 input[type="text"],
 input[type="password"] {
   background-color: lightcyan;
@@ -61,16 +57,15 @@ input:focus {
   border-color: #888;
 }
 
-/* Checkbox label */
 #checkbox {
   text-align: left;
   width: 100%;
   max-width: 260px;
   font-size: 15px;
   margin-top: 5px;
+  padding-left: 10px;
 }
 
-/* Button (optional) */
 button {
   margin-top: 10px;
   padding: 10px 15px;
