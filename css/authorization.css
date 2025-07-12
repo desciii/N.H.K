@@ -1,0 +1,88 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap");
+
+body {
+  background-color: #edede9;
+  font-family: "Inter", sans-serif;
+  font-size: 17px;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+/* Wrapper to center the box */
+#container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+/* Main box */
+#main {
+  font-size: 18px;
+  background-color: #e3d5ca;
+  padding: 30px 25px;
+  border-radius: 12px;
+  border: 2px solid #000;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 280px;
+  text-align: center;
+}
+
+/* Form container */
+#form-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+/* Inputs */
+input[type="text"],
+input[type="password"] {
+  background-color: lightcyan;
+  font-size: 16px;
+  border: 1px solid #aaa;
+  border-radius: 6px;
+  padding: 8px 12px;
+  width: 100%;
+  margin-bottom: 5px;
+  max-width: 260px;
+  box-sizing: border-box;
+}
+
+input:focus {
+  outline: none;
+  border-color: #888;
+}
+
+/* Checkbox label */
+#checkbox {
+  text-align: left;
+  width: 100%;
+  max-width: 260px;
+  font-size: 15px;
+  margin-top: 5px;
+}
+
+/* Button (optional) */
+button {
+  margin-top: 10px;
+  padding: 10px 15px;
+  border: none;
+  background-color: #d5bdaf;
+  color: #000;
+  font-size: 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+button:hover {
+  background-color: #c7afa1;
+}
