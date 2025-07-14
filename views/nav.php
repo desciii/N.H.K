@@ -60,10 +60,12 @@
   </head>
   <body>
     <nav>
-      <div class="nav-left">
-        <img src="../assets/logo.png" alt="Logo" />
-        <div class="nav-title">N.H.K</div>
+    <a href="stats.php" class="flex items-center space-x-2">
+      <div class="nav-left flex items-center space-x-2">
+        <img src="../assets/logo.png" alt="Logo" class="h-8 w-8" />
+        <div class="nav-title text-lg font-bold">N.H.K</div>
       </div>
+    </a>
       <div class="nav-links">
         <a href="dashboard.php">Dashboard</a>
         <a href="tasks.php">Tasks</a>
