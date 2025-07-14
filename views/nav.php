@@ -8,7 +8,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter&display=swap"
       rel="stylesheet"
     />
-    <link rel="icon" href="/nhk/N.H.K/assets/logo.png" type="image/png" />
+<link rel="icon" href="/PHP/nhk/N.H.K/assets/logo.png" type="image/png" />
     <style>
       body {
         font-family: "Inter", sans-serif;
@@ -61,7 +61,7 @@
   <body>
     <nav>
       <div class="nav-left">
-        <img src="/nhk/N.H.K/assets/logo.png" alt="Logo" />
+        <img src="../assets/logo.png" alt="Logo" />
         <div class="nav-title">N.H.K</div>
       </div>
       <div class="nav-links">
