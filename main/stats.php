@@ -9,15 +9,33 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
-$total = $pdo->prepare("SELECT COUNT(*) FROM tasks WHERE user_id = ?");
+// Total tasks assigned to the user
+$total = $pdo->prepare("
+  SELECT COUNT(*) 
+  FROM tasks t
+  JOIN task_assignments ta ON t.id = ta.task_id
+  WHERE ta.user_id = ?
+");
 $total->execute([$user_id]);
 $totalTasks = $total->fetchColumn();
 
-$upcoming = $pdo->prepare("SELECT COUNT(*) FROM tasks WHERE user_id = ? AND due_date >= CURDATE()");
+// Upcoming tasks
+$upcoming = $pdo->prepare("
+  SELECT COUNT(*) 
+  FROM tasks t
+  JOIN task_assignments ta ON t.id = ta.task_id
+  WHERE ta.user_id = ? AND t.due_date >= CURDATE()
+");
 $upcoming->execute([$user_id]);
 $upcomingTasks = $upcoming->fetchColumn();
 
-$completed = $pdo->prepare("SELECT COUNT(*) FROM tasks WHERE user_id = ? AND status = 'done'");
+// Completed tasks
+$completed = $pdo->prepare("
+  SELECT COUNT(*) 
+  FROM tasks t
+  JOIN task_assignments ta ON t.id = ta.task_id
+  WHERE ta.user_id = ? AND t.status = 'done'
+");
 $completed->execute([$user_id]);
 $completedTasks = $completed->fetchColumn();
 

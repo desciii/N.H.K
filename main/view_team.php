@@ -44,6 +44,9 @@ $members = $membersStmt->fetchAll();
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 
 
   <style>
@@ -225,6 +228,7 @@ $members = $membersStmt->fetchAll();
     max-width: 400px;
     position: relative;
     animation: slideDown 0.25s ease-out;
+    margin-top: 10px;
   }
 
     @keyframes slideDown {
@@ -283,6 +287,7 @@ $members = $membersStmt->fetchAll();
       border-radius: 6px;
       cursor: pointer;
       transition: background-color 0.2s ease;
+      margin-top: 10px;
     }
 
     .modal-content button[type="submit"]:hover {
@@ -401,20 +406,38 @@ $members = $membersStmt->fetchAll();
   <div class="modal-content">
     <span class="close-btn" onclick="closeTaskModal()">&times;</span>
     <h2>Add Task</h2>
-    <form action="add_task.php" method="POST">
-      <input type="hidden" name="team_id" value="<?= $team_id ?>">
-      <input type="hidden" name="due_date" id="due_date">
+      <form action="add_task.php" method="POST">
+        <input type="hidden" name="team_id" value="<?= $team_id ?>">
+        <input type="hidden" name="due_date" id="due_date">
 
-      <label for="title">Task Title</label>
-      <input type="text" name="title" id="title" required>
+        <label for="title">Task Title</label>
+        <input type="text" name="title" id="title" required>
 
-      <label for="description">Description</label>
-      <input type="text" name="description" id="description">
+        <label for="description">Description</label>
+        <input type="text" name="description" id="description">
 
-      <button type="submit">Add Task</button>
-    </form>
+        <label for="assigned_users">Assign To</label>
+        <select name="assigned_users[]" id="assigned_users" multiple required style="width: 100%;">
+          <?php foreach ($members as $member): ?>
+            <option value="<?= htmlspecialchars($member['username']) ?>">
+              <?= htmlspecialchars($member['username']) ?>
+            </option>
+          <?php endforeach; ?>
+        </select>
+
+        <button type="submit">Add Task</button>
+      </form>
   </div>
 </div>
+
+<script>
+  $(document).ready(function() {
+    $('#assigned_users').select2({
+      placeholder: "Select team members",
+      allowClear: true
+    });
+  });
+</script>
 
 <!-- Load FullCalendar JavaScript -->
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js'></script>
@@ -451,35 +474,35 @@ window.onclick = function (e) {
 document.addEventListener('DOMContentLoaded', function () {
   const calendarEl = document.getElementById('calendar');
 
-  if (!calendarEl) {
-    console.error("Calendar div not found");
-    return;
-  }
+  const calendar = new FullCalendar.Calendar(calendarEl, {
+    initialView: 'dayGridMonth',
+    height: 'auto',
+    selectable: true,
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,timeGridWeek'
+    },
+    select: function (info) {
+      document.getElementById('due_date').value = info.startStr;
+      openTaskModal();
+    },
+    events: `get_tasks.php?team_id=<?= $team_id ?>`, // Load tasks dynamically
 
-  try {
-    const calendar = new FullCalendar.Calendar(calendarEl, {
-      initialView: 'dayGridMonth',
-      height: 'auto',
-      selectable: true,
-      headerToolbar: {
-        left: 'prev,next today',
-        center: 'title',
-        right: 'dayGridMonth,timeGridWeek'
-      },
-      select: function (info) {
-        $('#due_date').val(info.startStr);
-        openTaskModal();
-      },
-    });
+    // 🧠 Add tooltip on hover
+    eventDidMount: function(info) {
+      new bootstrap.Tooltip(info.el, {
+        title: info.event.title,
+        placement: 'top',
+        trigger: 'hover',
+        container: 'body'
+      });
+    }
+  });
 
-    calendar.render();
-    console.log('✅ Calendar rendered');
-
-  } catch (err) {
-    console.error('❌ Calendar error:', err);
-    alert('FullCalendar failed to load. Check your internet connection or try reloading.');
-  }
+  calendar.render();
 });
+
 </script>
 
 </body>
