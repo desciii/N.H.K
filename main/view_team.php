@@ -39,6 +39,13 @@ $members = $membersStmt->fetchAll();
   <meta charset="UTF-8" />
   <title><?= htmlspecialchars($team['name']) ?> - Team</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+
+
   <style>
     * {
       margin: 0;
@@ -84,6 +91,7 @@ $members = $membersStmt->fetchAll();
     .sidebar h3 {
       font-size: 18px;
       margin-bottom: 15px;
+      font-weight: bold;
     }
 
     .sidebar ul {
@@ -116,6 +124,7 @@ $members = $membersStmt->fetchAll();
       border-radius: 8px;
       margin-bottom: 20px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+      margin-top: 10px;
     }
 
     .team-header h1 {
@@ -170,6 +179,142 @@ $members = $membersStmt->fetchAll();
     a {
       text-decoration: none;
     }
+
+    .floating-add-button {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background-color: lightslategray;
+      color: white;
+      border: none;
+      padding: 14px 16px;
+      border-radius: 50%;
+      font-size: 20px;
+      cursor: pointer;
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+      transition: background-color 0.2s ease;
+      z-index: 500;
+    }
+
+    .floating-add-button:hover {
+      background-color: #c0392b;
+    }
+
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 100vw;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+  }
+
+  .modal-overlay.flex {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .modal-content {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    width: 100%;
+    max-width: 400px;
+    position: relative;
+    animation: slideDown 0.25s ease-out;
+  }
+
+    @keyframes slideDown {
+      from {
+        transform: translateY(-30px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 12px;
+      right: 16px;
+      font-size: 24px;
+      color: #888;
+      cursor: pointer;
+    }
+
+    .close-btn:hover {
+      color: #000;
+    }
+
+    .modal-content label {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 6px;
+      text-align: left;
+    }
+
+    .modal-content input,
+    .modal-content select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 15px;
+      margin-bottom: 16px;
+    }
+
+    .modal-content input:focus,
+    .modal-content select:focus {
+      border-color: #4caf50;
+      outline: none;
+    }
+
+    .modal-content button[type="submit"] {
+      background-color: #4caf50;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .modal-content button[type="submit"]:hover {
+      background-color: #43a047;
+    }
+
+    #calendar {
+      background-color: white;
+      border-radius: 6px;
+      padding: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      min-height: 360px;
+      font-size: 13px;
+    }
+
+    .fc {
+      font-size: 13px;
+    }
+
+    .fc-toolbar-title {
+      font-size: 1rem !important;
+    }
+
+    .fc-button {
+      padding: 2px 6px !important;
+      font-size: 12px !important;
+    }
+
+    .fc-daygrid-day-number {
+      padding: 2px;
+      font-size: 12px;
+    }
   </style>
 </head>
 <body>
@@ -203,6 +348,9 @@ $members = $membersStmt->fetchAll();
 
     <!-- Main -->
     <div class="main">
+      <!-- Calendar Section -->
+      <div id='calendar'></div>
+      
       <div class="team-header">
         <h1><?= htmlspecialchars($team['name']) ?></h1>
         <p><?= htmlspecialchars($team['description']) ?></p>
@@ -218,8 +366,121 @@ $members = $membersStmt->fetchAll();
           </div>
         <?php endforeach; ?>
       </div>
+
+      <!-- Floating Add Member Button -->
+      <button class="floating-add-button" onclick="openMemberModal()" title="Add Member">
+        <i class="fas fa-user-plus"></i>
+      </button>
     </div>
   </div>
+
+<!-- Add Member Modal -->
+<div id="memberModal" class="modal-overlay">
+  <div class="modal-content">
+    <span class="close-btn" onclick="closeMemberModal()">&times;</span>
+    <h2>Add Team Member</h2>
+    <form action="add_member.php" method="POST">
+      <input type="hidden" name="team_id" value="<?= $team_id ?>">
+
+      <label for="username">Username</label>
+      <input type="text" name="username" id="username" required>
+
+      <label for="role">Role</label>
+      <select name="role" id="role" required>
+        <option value="member">Member</option>
+        <option value="admin">Admin</option>
+      </select>
+
+      <button type="submit">Add Member</button>
+    </form>
+  </div>
+</div>
+
+<!-- Add Task Modal -->
+<div id="taskModal" class="modal-overlay">
+  <div class="modal-content">
+    <span class="close-btn" onclick="closeTaskModal()">&times;</span>
+    <h2>Add Task</h2>
+    <form action="add_task.php" method="POST">
+      <input type="hidden" name="team_id" value="<?= $team_id ?>">
+      <input type="hidden" name="due_date" id="due_date">
+
+      <label for="title">Task Title</label>
+      <input type="text" name="title" id="title" required>
+
+      <label for="description">Description</label>
+      <input type="text" name="description" id="description">
+
+      <button type="submit">Add Task</button>
+    </form>
+  </div>
+</div>
+
+<!-- Load FullCalendar JavaScript -->
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js'></script>
+
+<script>
+function openMemberModal() {
+  document.getElementById("memberModal").classList.add("flex");
+}
+
+function closeMemberModal() {
+  document.getElementById("memberModal").classList.remove("flex");
+}
+
+function openTaskModal() {
+  const modal = document.getElementById("taskModal");
+  modal.classList.add("flex");
+}
+
+function closeTaskModal() {
+  document.getElementById("taskModal").classList.remove("flex");
+}
+
+
+window.onclick = function (e) {
+  const memberModal = document.getElementById("memberModal");
+  const taskModal = document.getElementById("taskModal");
+
+  if (e.target === memberModal) closeMemberModal();
+  if (e.target === taskModal) closeTaskModal();
+};
+</script>
+
+  <script>
+document.addEventListener('DOMContentLoaded', function () {
+  const calendarEl = document.getElementById('calendar');
+
+  if (!calendarEl) {
+    console.error("Calendar div not found");
+    return;
+  }
+
+  try {
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+      initialView: 'dayGridMonth',
+      height: 'auto',
+      selectable: true,
+      headerToolbar: {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'dayGridMonth,timeGridWeek'
+      },
+      select: function (info) {
+        $('#due_date').val(info.startStr);
+        openTaskModal();
+      },
+    });
+
+    calendar.render();
+    console.log('✅ Calendar rendered');
+
+  } catch (err) {
+    console.error('❌ Calendar error:', err);
+    alert('FullCalendar failed to load. Check your internet connection or try reloading.');
+  }
+});
+</script>
 
 </body>
 </html>
