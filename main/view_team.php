@@ -14,13 +14,23 @@ if (!isset($_GET['id'])) {
 $team_id = $_GET['id'];
 
 // Get team info
-$stmt = $pdo->prepare("SELECT t.*, u.username AS creator FROM teams t JOIN users u ON t.created_by = u.id WHERE t.id = ?");
+$stmt = $pdo->prepare("
+  SELECT t.id, t.name, t.description, t.created_at, u.username AS creator
+  FROM teams t
+  JOIN users u ON t.created_by = u.id
+  WHERE t.id = ?
+");
 $stmt->execute([$team_id]);
 $team = $stmt->fetch();
 
 if (!$team) {
   die("Team not found.");
 }
+
+$team_name = htmlspecialchars($team['name']);
+$team_description = htmlspecialchars($team['description'] ?? 'No description');
+$team_creator = htmlspecialchars($team['creator'] ?? 'Unknown');
+$team_created_at = !empty($team['created_at']) ? date('F j, Y', strtotime($team['created_at'])) : 'Unknown date';
 
 // Get team members
 $membersStmt = $pdo->prepare("
@@ -46,8 +56,6 @@ $members = $membersStmt->fetchAll();
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
-
 
   <style>
     * {
@@ -80,7 +88,9 @@ $members = $membersStmt->fetchAll();
 
     .layout {
       display: flex;
-      margin-top: 60px; /* height of nav */
+      margin-top: 60px;
+      height: calc(100vh - 60px);
+      overflow: hidden;
     }
 
     .sidebar {
@@ -89,6 +99,10 @@ $members = $membersStmt->fetchAll();
       padding: 20px;
       height: calc(100vh - 60px);
       box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+      overflow-y: auto; 
+      position: sticky;
+      top: 60px;
+      flex-shrink: 0;
     }
 
     .sidebar h3 {
@@ -119,6 +133,10 @@ $members = $membersStmt->fetchAll();
     .main {
       flex: 1;
       padding: 30px;
+      overflow-y: auto;
+      height: calc(100vh - 60px);
+      margin-left: 200px;
+
     }
 
     .team-header {
@@ -326,42 +344,25 @@ $members = $membersStmt->fetchAll();
 
   <?php include __DIR__ . '/../views/nav.php'; ?>
 
-  <!-- Sidebar + Main Content -->
   <div class="layout">
     <!-- Sidebar -->
     <div class="sidebar">
-      <h3>Your Teams</h3>
-      <ul>
-        <?php
-        $stmt = $pdo->prepare("
-          SELECT DISTINCT t.id, t.name
-          FROM teams t
-          LEFT JOIN team_members tm ON t.id = tm.team_id
-          WHERE t.created_by = ? OR tm.user_id = ?
-        ");
-        $stmt->execute([$_SESSION['user_id'], $_SESSION['user_id']]);
-        $teams = $stmt->fetchAll();
-
-        foreach ($teams as $t): ?>
-          <li><a href="view_team.php?id=<?= $t['id'] ?>"><?= htmlspecialchars($t['name']) ?></a></li>
-        <?php endforeach; ?>
-        <?php if (empty($teams)): ?>
-          <li>No teams found</li>
-        <?php endif; ?>
-      </ul>
+      <?php include __DIR__ . '/../views/teams.php'; ?>
     </div>
 
-    <!-- Main -->
+    <!-- Main Content -->
     <div class="main">
       <!-- Calendar Section -->
-      <div id='calendar'></div>
-      
+      <div id="calendar"></div>
+
+      <!-- Team Info -->
       <div class="team-header">
-        <h1><?= htmlspecialchars($team['name']) ?></h1>
-        <p><?= htmlspecialchars($team['description']) ?></p>
-        <p class="text-sm">Created by <strong><?= htmlspecialchars($team['creator']) ?></strong> on <?= date('F j, Y', strtotime($team['created_at'])) ?></p>
+        <h1><?= $team_name ?></h1>
+        <p><?= $team_description ?></p>
+        <p class="text-sm">Created by <strong><?= $team_creator ?></strong> on <?= $team_created_at ?></p>
       </div>
 
+      <!-- Team Members -->
       <div class="team-members">
         <h2>Team Members</h2>
         <?php foreach ($members as $member): ?>
@@ -372,7 +373,7 @@ $members = $membersStmt->fetchAll();
         <?php endforeach; ?>
       </div>
 
-      <!-- Floating Add Member Button -->
+      <!-- Floating Add Button -->
       <button class="floating-add-button" onclick="openMemberModal()" title="Add Member">
         <i class="fas fa-user-plus"></i>
       </button>
@@ -406,29 +407,77 @@ $members = $membersStmt->fetchAll();
   <div class="modal-content">
     <span class="close-btn" onclick="closeTaskModal()">&times;</span>
     <h2>Add Task</h2>
-      <form action="add_task.php" method="POST">
-        <input type="hidden" name="team_id" value="<?= $team_id ?>">
-        <input type="hidden" name="due_date" id="due_date">
+    <form action="add_task.php" method="POST">
+      <input type="hidden" name="team_id" value="<?= $team_id ?>">
+      <input type="hidden" name="due_date" id="due_date">
 
-        <label for="title">Task Title</label>
-        <input type="text" name="title" id="title" required>
+      <label for="title">Task Title</label>
+      <input type="text" name="title" id="title" required>
 
-        <label for="description">Description</label>
-        <input type="text" name="description" id="description">
+      <label for="description">Description</label>
+      <input type="text" name="description" id="description">
 
-        <label for="assigned_users">Assign To</label>
-        <select name="assigned_users[]" id="assigned_users" multiple required style="width: 100%;">
-          <?php foreach ($members as $member): ?>
-            <option value="<?= htmlspecialchars($member['username']) ?>">
-              <?= htmlspecialchars($member['username']) ?>
-            </option>
-          <?php endforeach; ?>
-        </select>
+      <label for="assigned_users">Assign To</label>
+      <select name="assigned_users[]" id="assigned_users" multiple required style="width: 100%;">
+        <?php foreach ($members as $member): ?>
+          <option value="<?= htmlspecialchars($member['username']) ?>">
+            <?= htmlspecialchars($member['username']) ?>
+          </option>
+        <?php endforeach; ?>
+      </select>
 
-        <button type="submit">Add Task</button>
-      </form>
+      <button type="submit">Add Task</button>
+    </form>
   </div>
 </div>
+
+<!-- Edit Task Modal -->
+<div id="editTaskModal" class="modal-overlay">
+  <div class="modal-content">
+    <span class="close-btn" onclick="closeEditTaskModal()">&times;</span>
+    <h2>Edit Task</h2>
+    <form action="edit_task.php" method="POST">
+      <input type="hidden" name="task_id" id="edit_task_id">
+      <input type="hidden" name="team_id" value="<?= $team_id ?>">
+
+      <label for="edit_title">Task Title</label>
+      <input type="text" name="title" id="edit_title" required>
+
+      <label for="edit_description">Description</label>
+      <input type="text" name="description" id="edit_description">
+
+      <label for="edit_due_date">Due Date</label>
+      <input type="date" name="due_date" id="edit_due_date" required>
+
+      <label for="edit_assigned_users">Assign To</label>
+      <select name="assigned_users[]" id="edit_assigned_users" multiple required style="width: 100%;">
+        <?php foreach ($members as $member): ?>
+          <option value="<?= htmlspecialchars($member['username']) ?>">
+            <?= htmlspecialchars($member['username']) ?>
+          </option>
+        <?php endforeach; ?>
+      </select>
+
+      <label for="edit_status">Status</label>
+      <select name="status" id="edit_status" required>
+        <option value="pending">Pending</option>
+        <option value="in_progress">In Progress</option>
+        <option value="done">Done</option>
+      </select>
+
+      <div class="flex justify-end space-x-2">
+      <button type="button" id="saveTaskBtn" class="bg-blue-500 hover:bg-blue-600 text-black px-4 py-2 rounded">
+        Save Changes
+      </button>
+      <button type="button" id="deleteTaskBtn" class="bg-red-500 hover:bg-red-600 text-black px-4 py-2 rounded">
+        Delete Task
+      </button>
+    </div>
+    </form>
+  </div>
+</div>
+
+
 
 <script>
   $(document).ready(function() {
@@ -436,11 +485,14 @@ $members = $membersStmt->fetchAll();
       placeholder: "Select team members",
       allowClear: true
     });
+
+    $('#edit_assigned_users').select2({
+      placeholder: "Select team members",
+      allowClear: true
+    });
   });
 </script>
 
-<!-- Load FullCalendar JavaScript -->
-<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js'></script>
 
 <script>
 function openMemberModal() {
@@ -460,6 +512,9 @@ function closeTaskModal() {
   document.getElementById("taskModal").classList.remove("flex");
 }
 
+function closeEditTaskModal() {
+  document.getElementById("editTaskModal").classList.remove("flex");
+}
 
 window.onclick = function (e) {
   const memberModal = document.getElementById("memberModal");
@@ -470,7 +525,7 @@ window.onclick = function (e) {
 };
 </script>
 
-  <script>
+<script>
 document.addEventListener('DOMContentLoaded', function () {
   const calendarEl = document.getElementById('calendar');
 
@@ -484,13 +539,35 @@ document.addEventListener('DOMContentLoaded', function () {
       right: 'dayGridMonth,timeGridWeek'
     },
     select: function (info) {
-      document.getElementById('due_date').value = info.startStr;
-      openTaskModal();
-    },
-    events: `get_tasks.php?team_id=<?= $team_id ?>`, // Load tasks dynamically
+      const selectedDate = info.startStr;
 
-    // 🧠 Add tooltip on hover
-    eventDidMount: function(info) {
+      // Check if there's already a task on that date
+      const hasEvent = calendar.getEvents().some(event =>
+        event.startStr === selectedDate
+      );
+
+      if (!hasEvent) {
+        document.getElementById('due_date').value = selectedDate;
+        openTaskModal();
+      } else {
+        alert("This date already has a task. Click the task to edit it.");
+      }
+    },
+    eventClick: function(info) {
+      const task = info.event;
+
+      document.getElementById('edit_task_id').value = task.id;
+      document.getElementById('edit_title').value = task.title;
+      document.getElementById('edit_description').value = task.extendedProps.description;
+      document.getElementById('edit_due_date').value = task.startStr;
+
+      $('#edit_assigned_users').val(task.extendedProps.assigned_to).trigger('change');
+      $('#edit_status').val(task.extendedProps.status);
+
+      document.getElementById('editTaskModal').classList.add('flex');
+    }, 
+    events: "get_tasks.php?team_id=<?= $team_id ?>",
+    eventDidMount: function (info) {
       new bootstrap.Tooltip(info.el, {
         title: info.event.title,
         placement: 'top',
@@ -500,8 +577,44 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
+  fetch(`get_tasks.php?team_id=<?= $team_id ?>`)
+  .then(res => res.json())
+  .then(data => console.log("Tasks fetched:", data))
+  .catch(err => console.error("Error fetching tasks:", err));
   calendar.render();
 });
+
+document.getElementById("deleteTaskBtn").addEventListener("click", function() {
+  const taskId = document.getElementById("edit_task_id").value;
+
+  if (!taskId) {
+    alert("No task selected!");
+    return;
+  }
+
+  if (confirm("Are you sure you want to delete this task?")) {
+    fetch("delete_task.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "task_id=" + taskId
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        alert("Task deleted!");
+        document.getElementById("editTaskModal").classList.remove("flex"); // close modal
+        calendar.refetchEvents(); // refresh events
+      } else {
+        alert("Error: " + data.error);
+      }
+    })
+    .catch(err => {
+      console.error("Delete error:", err);
+      alert("Something went wrong while deleting.");
+    });
+  }
+});
+
 
 </script>
 
