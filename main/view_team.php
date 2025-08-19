@@ -15,7 +15,7 @@ $team_id = $_GET['id'];
 
 // Get team info
 $stmt = $pdo->prepare("
-  SELECT t.id, t.name, t.description, t.created_at, u.username AS creator
+  SELECT t.id, t.name, t.description, t.created_at, t.created_by, u.username AS creator
   FROM teams t
   JOIN users u ON t.created_by = u.id
   WHERE t.id = ?
@@ -32,9 +32,12 @@ $team_description = htmlspecialchars($team['description'] ?? 'No description');
 $team_creator = htmlspecialchars($team['creator'] ?? 'Unknown');
 $team_created_at = !empty($team['created_at']) ? date('F j, Y', strtotime($team['created_at'])) : 'Unknown date';
 
+// Check if current user is the team creator
+$is_creator = ($_SESSION['user_id'] == $team['created_by']);
+
 // Get team members
 $membersStmt = $pdo->prepare("
-  SELECT u.username, tm.role 
+  SELECT u.id, u.username, tm.role 
   FROM team_members tm 
   JOIN users u ON tm.user_id = u.id 
   WHERE tm.team_id = ?
@@ -178,6 +181,33 @@ $members = $membersStmt->fetchAll();
       background-color: #f9f9f9;
       display: flex;
       justify-content: space-between;
+      align-items: center;
+    }
+
+    .member-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .member-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .remove-btn {
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .remove-btn:hover {
+      background-color: #c82333;
     }
 
     .nav-left a {
@@ -367,16 +397,27 @@ $members = $membersStmt->fetchAll();
         <h2>Team Members</h2>
         <?php foreach ($members as $member): ?>
           <div class="member">
-            <span><?= htmlspecialchars($member['username']) ?></span>
-            <span style="font-size: 14px; color: #888;"><?= htmlspecialchars($member['role']) ?></span>
+            <div class="member-info">
+              <span><?= htmlspecialchars($member['username']) ?></span>
+              <span style="font-size: 14px; color: #888;"><?= htmlspecialchars($member['role']) ?></span>
+            </div>
+            <div class="member-actions">
+              <?php if ($is_creator && $member['id'] != $_SESSION['user_id']): ?>
+                <button class="remove-btn" onclick="removeMember(<?= $member['id'] ?>, '<?= htmlspecialchars($member['username']) ?>')">
+                  <i class="fas fa-user-minus"></i> Remove
+                </button>
+              <?php endif; ?>
+            </div>
           </div>
         <?php endforeach; ?>
       </div>
 
-      <!-- Floating Add Button -->
-      <button class="floating-add-button" onclick="openMemberModal()" title="Add Member">
-        <i class="fas fa-user-plus"></i>
-      </button>
+      <!-- Floating Add Button - Only show to creator -->
+      <?php if ($is_creator): ?>
+        <button class="floating-add-button" onclick="openMemberModal()" title="Add Member">
+          <i class="fas fa-user-plus"></i>
+        </button>
+      <?php endif; ?>
     </div>
   </div>
 
@@ -514,6 +555,29 @@ function closeTaskModal() {
 
 function closeEditTaskModal() {
   document.getElementById("editTaskModal").classList.remove("flex");
+}
+
+function removeMember(userId, username) {
+  if (confirm(`Are you sure you want to remove ${username} from this team?`)) {
+    fetch("remove_member.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: `team_id=<?= $team_id ?>&user_id=${userId}`
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        alert(`${username} has been removed from the team.`);
+        location.reload(); // Refresh the page to update the member list
+      } else {
+        alert("Error: " + data.error);
+      }
+    })
+    .catch(err => {
+      console.error("Remove member error:", err);
+      alert("Something went wrong while removing the member.");
+    });
+  }
 }
 
 window.onclick = function (e) {
