@@ -86,32 +86,38 @@ $completedTasks = $completed->fetchColumn();
       box-shadow: 0 2px 6px rgba(0,0,0,0.05);
     }
 
+
     .layout {
       display: flex;
       margin-top: 60px; /* height of the nav */
       flex: 1;
     }
 
-    /* Sidebar */
-    .sidebar {
+    .sidebar {  
       width: 220px;
-      min-height: calc(100vh - 60px);
       background-color: #d6ccc2;
       padding: 20px;
+      height: calc(100vh - 60px);
       box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+      overflow-y: auto; 
+      position: sticky;
+      top: 60px;
+      flex-shrink: 0;
     }
 
     .sidebar h3 {
       font-size: 18px;
-      margin-bottom: 15px;
+      margin-bottom: 18px !important;
+      font-weight: bold;
     }
 
     .sidebar ul {
       list-style: none;
+      padding: 0;
     }
 
     .sidebar li {
-      margin-bottom: 10px;
+      margin: 15px 0 !important;
     }
 
     .sidebar a {
