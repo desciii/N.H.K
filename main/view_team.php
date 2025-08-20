@@ -342,6 +342,30 @@ $members = $membersStmt->fetchAll();
       background-color: #43a047;
     }
 
+    .modal-button {
+      background-color: #4caf50;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      margin: 5px;
+    }
+
+    .modal-button:hover {
+      background-color: #43a047;
+    }
+
+    .modal-button.delete {
+      background-color: #dc3545;
+    }
+
+    .modal-button.delete:hover {
+      background-color: #c82333;
+    }
+
     #calendar {
       background-color: white;
       border-radius: 6px;
@@ -367,6 +391,13 @@ $members = $membersStmt->fetchAll();
     .fc-daygrid-day-number {
       padding: 2px;
       font-size: 12px;
+    }
+
+    .button-container {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
     }
   </style>
 </head>
@@ -404,7 +435,7 @@ $members = $membersStmt->fetchAll();
             <div class="member-actions">
               <?php if ($is_creator && $member['id'] != $_SESSION['user_id']): ?>
                 <button class="remove-btn" onclick="removeMember(<?= $member['id'] ?>, '<?= htmlspecialchars($member['username']) ?>')">
-                  <i class="fas fa-user-minus"></i> Remove
+                  <i class="fas fa-user-minus"></i>  Remove
                 </button>
               <?php endif; ?>
             </div>
@@ -477,7 +508,7 @@ $members = $membersStmt->fetchAll();
   <div class="modal-content">
     <span class="close-btn" onclick="closeEditTaskModal()">&times;</span>
     <h2>Edit Task</h2>
-    <form action="edit_task.php" method="POST">
+    <form id="editTaskForm">
       <input type="hidden" name="task_id" id="edit_task_id">
       <input type="hidden" name="team_id" value="<?= $team_id ?>">
 
@@ -506,14 +537,14 @@ $members = $membersStmt->fetchAll();
         <option value="done">Done</option>
       </select>
 
-      <div class="flex justify-end space-x-2">
-      <button type="button" id="saveTaskBtn" class="bg-blue-500 hover:bg-blue-600 text-black px-4 py-2 rounded">
-        Save Changes
-      </button>
-      <button type="button" id="deleteTaskBtn" class="bg-red-500 hover:bg-red-600 text-black px-4 py-2 rounded">
-        Delete Task
-      </button>
-    </div>
+      <div class="button-container">
+        <button type="button" id="saveTaskBtn" class="modal-button">
+          Save Changes
+        </button>
+        <button type="button" id="deleteTaskBtn" class="modal-button delete">
+          Delete Task
+        </button>
+      </div>
     </form>
   </div>
 </div>
@@ -583,17 +614,22 @@ function removeMember(userId, username) {
 window.onclick = function (e) {
   const memberModal = document.getElementById("memberModal");
   const taskModal = document.getElementById("taskModal");
+  const editTaskModal = document.getElementById("editTaskModal");
 
   if (e.target === memberModal) closeMemberModal();
   if (e.target === taskModal) closeTaskModal();
+  if (e.target === editTaskModal) closeEditTaskModal();
 };
 </script>
 
 <script>
+// Declare calendar variable globally
+let calendar;
+
 document.addEventListener('DOMContentLoaded', function () {
   const calendarEl = document.getElementById('calendar');
 
-  const calendar = new FullCalendar.Calendar(calendarEl, {
+  calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: 'dayGridMonth',
     height: 'auto',
     selectable: true,
@@ -622,11 +658,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
       document.getElementById('edit_task_id').value = task.id;
       document.getElementById('edit_title').value = task.title;
-      document.getElementById('edit_description').value = task.extendedProps.description;
+      document.getElementById('edit_description').value = task.extendedProps.description || '';
       document.getElementById('edit_due_date').value = task.startStr;
 
-      $('#edit_assigned_users').val(task.extendedProps.assigned_to).trigger('change');
-      $('#edit_status').val(task.extendedProps.status);
+      $('#edit_assigned_users').val(task.extendedProps.assigned_to || []).trigger('change');
+      $('#edit_status').val(task.extendedProps.status || 'pending');
 
       document.getElementById('editTaskModal').classList.add('flex');
     }, 
@@ -641,14 +677,14 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  fetch(`get_tasks.php?team_id=<?= $team_id ?>`)
-  .then(res => res.json())
-  .then(data => console.log("Tasks fetched:", data))
-  .catch(err => console.error("Error fetching tasks:", err));
   calendar.render();
 });
 
-document.getElementById("deleteTaskBtn").addEventListener("click", function() {
+// Handle Delete Task
+document.getElementById("deleteTaskBtn").addEventListener("click", function(e) {
+  e.preventDefault(); // Prevent any default form submission
+  e.stopPropagation(); // Stop event bubbling
+  
   const taskId = document.getElementById("edit_task_id").value;
 
   if (!taskId) {
@@ -666,20 +702,49 @@ document.getElementById("deleteTaskBtn").addEventListener("click", function() {
     .then(data => {
       if (data.success) {
         alert("Task deleted!");
-        document.getElementById("editTaskModal").classList.remove("flex"); // close modal
-        calendar.refetchEvents(); // refresh events
+        closeEditTaskModal();
+        if (calendar) {
+          calendar.refetchEvents();
+        }
       } else {
-        alert("Error: " + data.error);
+        alert("Error: " + (data.error || "Failed to delete task"));
       }
     })
     .catch(err => {
       console.error("Delete error:", err);
-      alert("Something went wrong while deleting.");
+      alert("Something went wrong while deleting the task.");
     });
   }
 });
 
-
+// Handle Save Task Changes
+document.getElementById("saveTaskBtn").addEventListener("click", function(e) {
+    e.preventDefault(); // Prevent any default form submission
+    
+    const form = document.getElementById('editTaskForm');
+    const formData = new FormData(form);
+    
+    fetch("edit_task.php", {
+        method: "POST",
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert("Task updated successfully!");
+            closeEditTaskModal();
+            if (calendar) {
+                calendar.refetchEvents();
+            }
+        } else {
+            alert("Error: " + (data.error || "Failed to update task"));
+        }
+    })
+    .catch(err => {
+        console.error("Update error:", err);
+        alert("Something went wrong while updating the task.");
+    });
+});
 </script>
 
 </body>

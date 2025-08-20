@@ -28,7 +28,9 @@ try {
 } catch (PDOException $e) {
     error_log("Database error in delete_task.php: " . $e->getMessage());
     echo json_encode(['success' => false, 'error' => 'Database error: ' . $e->getMessage()]);
+    exit;
 } catch (Exception $e) {
     error_log("General error in delete_task.php: " . $e->getMessage());
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    exit;
 }

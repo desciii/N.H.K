@@ -68,7 +68,7 @@
     </a>
       <div class="nav-links">
         <a href="dashboard.php">Dashboard</a>
-        <a href="tasks.php">Tasks</a>
+        <a href="view_teams.php">Teams</a>
         <a href="profile.php">Profile</a>
         <a href="logout.php">Logout</a>
       </div>
