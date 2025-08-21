@@ -133,6 +133,10 @@ $members = $membersStmt->fetchAll();
       color: #4caf50;
     }
 
+    a {
+      text-decoration: none;
+    }
+
     .main {
       flex: 1;
       padding: 30px;
@@ -149,6 +153,7 @@ $members = $membersStmt->fetchAll();
       margin-bottom: 20px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.05);
       margin-top: 10px;
+      margin-left: 10px;
     }
 
     .team-header h1 {
@@ -166,6 +171,7 @@ $members = $membersStmt->fetchAll();
       padding: 20px;
       border-radius: 8px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+      margin-left: 10px;
     }
 
     .team-members h2 {
@@ -225,6 +231,7 @@ $members = $membersStmt->fetchAll();
     .nav-title {
       font-weight: bold;
       font-size: 18px;
+      text-decoration: none !important;
     }
 
     a {
@@ -373,6 +380,7 @@ $members = $membersStmt->fetchAll();
       box-shadow: 0 2px 6px rgba(0,0,0,0.08);
       min-height: 360px;
       font-size: 13px;
+      margin-left: 10px;
     }
 
     .fc {

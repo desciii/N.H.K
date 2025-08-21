@@ -291,6 +291,17 @@ $completedTasks = $completed->fetchColumn();
     .modal-content button[type="submit"]:hover {
       background-color: #43a047;
     }
+    .card-link {
+      text-decoration: none;
+      color: inherit;
+      transition: box-shadow 0.2s;
+      display: block;
+    }
+    .card-link:hover .card {
+      box-shadow: 0 8px 24px rgba(76,175,80,0.15);
+      background: #f3f7f3;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -309,22 +320,26 @@ $completedTasks = $completed->fetchColumn();
         <h2>Welcome back, <?= htmlspecialchars($_SESSION['username'] ?? 'Student') ?>!</h2>
         <p>Here's what's going on with your tasks today.</p>
       </div>
-
       <div class="cards">
-        <div class="card">
-          <h3>Total Tasks</h3>
-          <p><?= $totalTasks ?> tasks created</p>
-        </div>
-        <div class="card">
-          <h3>Upcoming Deadlines</h3>
-          <p><?= $upcomingTasks ?> due this week</p>
-        </div>
-        <div class="card">
-          <h3>Completed</h3>
-          <p><?= $completedTasks ?> tasks done</p>
-        </div>
+        <a href="tasks.php" class="card-link">
+          <div class="card">
+            <h3>Total Tasks</h3>
+            <p><?= $totalTasks ?> tasks created</p>
+          </div>
+        </a>
+        <a href="tasks.php#upcoming" class="card-link">
+          <div class="card">
+            <h3>Upcoming Deadlines</h3>
+            <p><?= $upcomingTasks ?> due this week</p>
+          </div>
+        </a>
+        <a href="dashboard.php" class="card-link">
+          <div class="card">
+            <h3>Completed</h3>
+            <p><?= $completedTasks ?> tasks done</p>
+          </div>
+        </a>
       </div>
-
       <!-- Floating Button to Trigger Modal -->
       <button class="floating-add-button" onclick="openModal()" title="Create Group">
         <i class="fas fa-plus"></i>
